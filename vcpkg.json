@@ -1,0 +1,12 @@
+{
+  "name" : "audiobuffers",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "38d1652f152d36481f2f4e8a85c0f1e14f3769f7",
+  "dependencies" : [ {
+    "name" : "boost-variant2",
+    "version>=" : "1.83.0"
+  }, {
+    "name" : "catch2",
+    "version>=" : "3.5.2"
+  } ]
+}
