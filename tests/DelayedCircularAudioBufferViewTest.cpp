@@ -9,7 +9,7 @@ template<typename T>
 struct DelayedCircularAudioBufferViewWrapper {
 	T **data;
 	size_t m_channels;
-	audioBuffers::DelayedCircularAudioBufferView<T> audioBufferView;
+	abl::DelayedCircularAudioBufferView<T> audioBufferView;
 
 	static DelayedCircularAudioBufferViewWrapper createWithIncrementalNumbers(size_t channels, size_t bufferSize, size_t singleBufferSize, size_t delayInSamples, size_t startOffset, const std::vector<size_t> &channelsMapping = {}, size_t startIndex = 0) {
 		auto data = new T *[channels];
@@ -34,7 +34,7 @@ struct DelayedCircularAudioBufferViewWrapper {
 	}
 
 	DelayedCircularAudioBufferViewWrapper(T **newData, size_t channels, size_t bufferSize, size_t singleBufferSize, size_t delayInSamples, size_t bufferStartOffset, const std::vector<size_t> &channelsMapping = {}, size_t startIndex = 0) : data{newData}, m_channels{channels},
-		audioBufferView{audioBuffers::DelayedCircularAudioBufferView{data, channels, bufferSize, singleBufferSize, delayInSamples, bufferStartOffset, channelsMapping, startIndex}} {}
+		audioBufferView{abl::DelayedCircularAudioBufferView{data, channels, bufferSize, singleBufferSize, delayInSamples, bufferStartOffset, channelsMapping, startIndex}} {}
 
 	~DelayedCircularAudioBufferViewWrapper() {
 		for (size_t channel = 0; channel < m_channels; ++channel) {
@@ -66,10 +66,10 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is iterable", "
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
 
 	size_t i, j = 0;
-	for (auto &&channelView: wrapper.audioBufferView) {
-		REQUIRE(dynamic_cast<audioBuffers::OffsettedReadCircularAudioBufferChannelView<TestType> *>(channelView.get()));
+	for (const auto& channelView: wrapper.audioBufferView) {
+//		REQUIRE(dynamic_cast<abl::OffsettedReadCircularAudioBufferChannelView<TestType> *>(channelView.get()));
 		i = startOffset;
-		for (auto &&sample: *channelView) {
+		for (auto &&sample: channelView) {
 			if (++i > bufferSize) i = 1;
 			REQUIRE(sample == i + (j * bufferSize));
 		}
@@ -89,19 +89,19 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] CircularBufferChannelView i
 	size_t i;
 	for (size_t channel = 0; channel < channels; ++channel) {
 		auto channelView = wrapper.audioBufferView[channel];
-		REQUIRE(channelView->getBufferSize() == singleBufferSize);
-		REQUIRE(dynamic_cast<audioBuffers::OffsettedReadCircularAudioBufferChannelView<TestType> *>(channelView.get()));
+		REQUIRE(channelView.getBufferSize() == singleBufferSize);
+//		REQUIRE(dynamic_cast<abl::OffsettedReadCircularAudioBufferChannelView<TestType> *>(channelView.get()));
 		i = startOffset;
-		for (auto &&sample: *channelView) {
+		for (auto &&sample: channelView) {
 			if (++i > bufferSize) i = 1;
 			REQUIRE(sample == i + (channel * bufferSize));
 		}
 
 		auto channelView2 = wrapper.audioBufferView.getChannelView(channel);
-		REQUIRE(channelView2->getBufferSize() == singleBufferSize);
-		REQUIRE(dynamic_cast<audioBuffers::OffsettedReadCircularAudioBufferChannelView<TestType> *>(channelView2.get()));
+		REQUIRE(channelView2.getBufferSize() == singleBufferSize);
+//		REQUIRE(dynamic_cast<abl::OffsettedReadCircularAudioBufferChannelView<TestType> *>(channelView2.get()));
 		i = startOffset;
-		for (auto &&sample: *channelView2) {
+		for (auto &&sample: channelView2) {
 			if (++i > bufferSize) i = 1;
 			REQUIRE(sample == i + (channel * bufferSize));
 		}
@@ -116,15 +116,15 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Valid ranged CircularBuffer
 	const size_t delayInSamples = 8;
 	const size_t startOffset = 20;
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
-	audioBuffers::SamplesRange samplesRange{2, 4};
+	abl::SamplesRange samplesRange{2, 4};
 
 	size_t i, j;
 	for (size_t channel = 0; channel < channels; ++channel) {
 		auto channelView = wrapper.audioBufferView.getChannelView(channel, samplesRange);
-		REQUIRE(channelView->getBufferSize() == 4);
+		REQUIRE(channelView.getBufferSize() == 4);
 		j = 2;
 		i = startOffset + 2;
-		for (auto &&sample: *channelView) {
+		for (auto &&sample: channelView) {
 			if (++i > bufferSize) i = 1;
 			REQUIRE(sample == i + (channel * bufferSize));
 			++j;
@@ -142,7 +142,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] CircularBufferView can be c
 	const size_t startOffset = 20;
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithFixedValue(channels, bufferSize, singleBufferSize, delayInSamples, startOffset, 3);
 
-	audioBuffers::DelayedCircularAudioBufferView<TestType> copyBuffer{wrapper.audioBufferView};
+	abl::DelayedCircularAudioBufferView<TestType> copyBuffer{wrapper.audioBufferView};
 
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -151,7 +151,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] CircularBufferView can be c
 	}
 
 	REQUIRE(!copyBuffer.isEmpty());
-	audioBuffers::DelayedCircularAudioBufferView<TestType> moveBuffer{std::move(copyBuffer)};
+	abl::DelayedCircularAudioBufferView<TestType> moveBuffer{std::move(copyBuffer)};
 
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -169,16 +169,16 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Valid ranged CircularBuffer
 	const size_t delayInSamples = 8;
 	const size_t startOffset = 20;
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
-	auto rangedBufferView = wrapper.audioBufferView.getRangedView(audioBuffers::SamplesRange{1, 5});
-	REQUIRE(dynamic_cast<audioBuffers::DelayedCircularAudioBufferView<TestType> *>(rangedBufferView.get()));
+	auto rangedBufferView = wrapper.audioBufferView.getRangedView(abl::SamplesRange{1, 5});
+//	REQUIRE(dynamic_cast<abl::DelayedCircularAudioBufferView<TestType> *>(rangedBufferView.get()));
 
 	size_t i, j;
 	for (size_t channel = 0; channel < channels; ++channel) {
-		auto channelView = (*rangedBufferView)[channel];
-		REQUIRE(channelView->getBufferSize() == 5);
+		auto channelView = rangedBufferView[channel];
+		REQUIRE(channelView.getBufferSize() == 5);
 		i = startOffset + 1;
 		j = 1;
-		for (auto &&sample: *channelView) {
+		for (auto &&sample: channelView) {
 			if (++i > bufferSize) i = 1;
 			REQUIRE(sample == i + (channel * bufferSize));
 			++j;
@@ -268,7 +268,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be copied f
 		}
 	}
 
-	wrapper.audioBufferView.copyFrom(wrapperCopy.audioBufferView, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.copyFrom(wrapperCopy.audioBufferView, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -280,7 +280,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be copied f
 	const size_t rangeFrom = 2;
 	const size_t rangeCount = 4;
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.copyFrom(wrapperCopy.audioBufferView, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	wrapper.audioBufferView.copyFrom(wrapperCopy.audioBufferView, abl::SamplesRange(rangeFrom, rangeCount));
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -294,7 +294,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be copied f
 	}
 
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.copyFrom(wrapperCopy.audioBufferView, audioBuffers::SamplesRange::allSamples(), 0.5);
+	wrapper.audioBufferView.copyFrom(wrapperCopy.audioBufferView, abl::SamplesRange::allSamples(), 0.5);
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -319,7 +319,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.copyIntoChannelFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.copyIntoChannelFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			const auto val = i + 1 + startOffset;
@@ -329,7 +329,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		const size_t rangeFrom = 2;
 		const size_t rangeCount = 4;
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.copyIntoChannelFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+		wrapper.audioBufferView.copyIntoChannelFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, abl::SamplesRange(rangeFrom, rangeCount));
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			auto val = i + 1 + startOffset;
@@ -337,11 +337,11 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 				val -= rangeFrom;
 			}
 			if (val > bufferSize) val -= bufferSize;
-			REQUIRE((*wrapper.audioBufferView[channel])[i] == val + (channel * bufferSize));
+			REQUIRE(wrapper.audioBufferView[channel][i] == val + (channel * bufferSize));
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.copyIntoChannelFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, audioBuffers::SamplesRange::allSamples(), 0.5);
+		wrapper.audioBufferView.copyIntoChannelFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, abl::SamplesRange::allSamples(), 0.5);
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			const auto val = i + 1 + startOffset;
@@ -365,7 +365,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be copied f
 		}
 	}
 
-	wrapper.audioBufferView.copyWithRampFrom(wrapperCopy.audioBufferView, 0.0, 1.0, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.copyWithRampFrom(wrapperCopy.audioBufferView, 0.0, 1.0, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -376,7 +376,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be copied f
 	const size_t rangeFrom = 1;
 	const size_t rangeCount = 4;
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.copyWithRampFrom(wrapperCopy.audioBufferView, 0.0, 1.0, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	wrapper.audioBufferView.copyWithRampFrom(wrapperCopy.audioBufferView, 0.0, 1.0, abl::SamplesRange(rangeFrom, rangeCount));
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -386,7 +386,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be copied f
 	}
 
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.copyWithRampFrom(wrapperCopy.audioBufferView, 0.0, 0.5, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.copyWithRampFrom(wrapperCopy.audioBufferView, 0.0, 0.5, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -410,7 +410,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.copyIntoChannelWithRampFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 1.0, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.copyIntoChannelWithRampFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 1.0, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(wrapper.audioBufferView.getSample(channel, i) == i);
@@ -419,7 +419,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		const size_t rangeFrom = 1;
 		const size_t rangeCount = 4;
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.copyIntoChannelWithRampFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 1.0, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+		wrapper.audioBufferView.copyIntoChannelWithRampFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 1.0, abl::SamplesRange(rangeFrom, rangeCount));
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			auto val = i >= rangeFrom && i < rangeFrom + rangeCount ? (i - rangeFrom) * 2 : i;
@@ -427,7 +427,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.copyIntoChannelWithRampFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 0.5, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.copyIntoChannelWithRampFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 0.5, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(wrapper.audioBufferView.getSample(channel, i) == TestType(i) / 2);
@@ -450,7 +450,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be added fr
 		}
 	}
 
-	wrapper.audioBufferView.addFrom(wrapperCopy.audioBufferView, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.addFrom(wrapperCopy.audioBufferView, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -460,7 +460,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be added fr
 	}
 
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.addFrom(wrapperCopy.audioBufferView, audioBuffers::SamplesRange::allSamples(), 0.5);
+	wrapper.audioBufferView.addFrom(wrapperCopy.audioBufferView, abl::SamplesRange::allSamples(), 0.5);
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -473,7 +473,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be added fr
 	const size_t rangeFrom = 3;
 	const size_t rangeCount = 4;
 	auto rangeWrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithFixedValue(channels, bufferSize, singleBufferSize, delayInSamples, startOffset, 2);
-	rangeWrapper.audioBufferView.addFrom(wrapperCopy.audioBufferView, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.addFrom(wrapperCopy.audioBufferView, abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -504,7 +504,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.addIntoChannelFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.addIntoChannelFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			const unsigned val = i + 1 + startOffset;
@@ -512,7 +512,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.addIntoChannelFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, audioBuffers::SamplesRange::allSamples(), 0.5);
+		wrapper.audioBufferView.addIntoChannelFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, abl::SamplesRange::allSamples(), 0.5);
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			unsigned val = i + 1 + startOffset;
@@ -523,7 +523,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		const size_t rangeFrom = 3;
 		const size_t rangeCount = 4;
 		rangeWrapper.audioBufferView.resetIndex();
-		rangeWrapper.audioBufferView.addIntoChannelFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+		rangeWrapper.audioBufferView.addIntoChannelFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, abl::SamplesRange(rangeFrom, rangeCount));
 		rangeWrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			unsigned val = 0;
@@ -552,7 +552,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be added fr
 		}
 	}
 
-	wrapper.audioBufferView.addWithRampFrom(wrapperCopy.audioBufferView, 0.0, 1.0, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.addWithRampFrom(wrapperCopy.audioBufferView, 0.0, 1.0, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -561,7 +561,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be added fr
 	}
 
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.addWithRampFrom(wrapperCopy.audioBufferView, 0.0, 0.5, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.addWithRampFrom(wrapperCopy.audioBufferView, 0.0, 0.5, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -572,7 +572,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data can be added fr
 	const size_t rangeFrom = 2;
 	const size_t rangeCount = 4;
 	auto rangeWrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithFixedValue(channels, bufferSize, singleBufferSize, delayInSamples, startOffset, 3);
-	rangeWrapper.audioBufferView.addWithRampFrom(wrapperCopy.audioBufferView, 0.0, 0.5, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.addWithRampFrom(wrapperCopy.audioBufferView, 0.0, 0.5, abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -597,14 +597,14 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.addIntoChannelWithRampFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 1.0, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.addIntoChannelWithRampFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 1.0, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(wrapper.audioBufferView.getSample(channel, i) == i + 3);
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.addIntoChannelWithRampFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 0.5, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.addIntoChannelWithRampFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 0.5, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(wrapper.audioBufferView.getSample(channel, i) == (TestType(i) / 2) + i + 3);
@@ -613,7 +613,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data can be 
 		const size_t rangeFrom = 2;
 		const size_t rangeCount = 4;
 		rangeWrapper.audioBufferView.resetIndex();
-		rangeWrapper.audioBufferView.addIntoChannelWithRampFrom(*wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 0.5, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+		rangeWrapper.audioBufferView.addIntoChannelWithRampFrom(wrapperCopy.audioBufferView.getChannelView(channel), channel, 0.0, 0.5, abl::SamplesRange(rangeFrom, rangeCount));
 		rangeWrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(rangeWrapper.audioBufferView.getSample(channel, i) == (i >= rangeFrom && i < rangeFrom + rangeCount ? i - rangeFrom : 0) + 3);
@@ -637,7 +637,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is scaled with 
 		}
 	}
 
-	wrapper.audioBufferView.applyGain(0.5, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.applyGain(0.5, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -648,7 +648,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is scaled with 
 	}
 
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.applyGain(3.0, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.applyGain(3.0, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -661,7 +661,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is scaled with 
 	const size_t rangeFrom = 5;
 	const size_t rangeCount = 3;
 	auto rangeWrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
-	rangeWrapper.audioBufferView.applyGain(2.0, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.applyGain(2.0, abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -690,7 +690,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data is scal
 			REQUIRE(wrapper.audioBufferView.getSample(channel, i) == val + (channel * bufferSize));
 		}
 
-		wrapper.audioBufferView.applyGainToChannel(0.5, channel, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.applyGainToChannel(0.5, channel, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			unsigned val = i + 1 + startOffset + delayInSamples;
@@ -699,7 +699,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data is scal
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.applyGainToChannel(3.0, channel, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.applyGainToChannel(3.0, channel, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			unsigned val = i + 1 + startOffset + delayInSamples;
@@ -710,7 +710,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data is scal
 		const size_t rangeFrom = 5;
 		const size_t rangeCount = 3;
 		rangeWrapper.audioBufferView.resetIndex();
-		rangeWrapper.audioBufferView.applyGainToChannel(2.0, channel, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+		rangeWrapper.audioBufferView.applyGainToChannel(2.0, channel, abl::SamplesRange(rangeFrom, rangeCount));
 		rangeWrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			unsigned val = i + 1 + startOffset + delayInSamples;
@@ -735,7 +735,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is scaled with 
 		}
 	}
 
-	wrapper.audioBufferView.applyGainRamp(0.0, 1.0, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.applyGainRamp(0.0, 1.0, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -744,7 +744,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is scaled with 
 	}
 
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.applyGainRamp(0.5, 0.0, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.applyGainRamp(0.5, 0.0, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -755,7 +755,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is scaled with 
 	const size_t rangeFrom = 2;
 	const size_t rangeCount = 4;
 	auto rangeWrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithFixedValue(channels, bufferSize, singleBufferSize, delayInSamples, startOffset, 10);
-	rangeWrapper.audioBufferView.applyGainRamp(0.0, 1.0, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.applyGainRamp(0.0, 1.0, abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -779,14 +779,14 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data is scal
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.applyGainRampToChannel(0.0, 1.0, channel, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.applyGainRampToChannel(0.0, 1.0, channel, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(wrapper.audioBufferView.getSample(channel, i) == TestType(i) * 10 / singleBufferSize);
 		}
 
 		wrapper.audioBufferView.resetIndex();
-		wrapper.audioBufferView.applyGainRampToChannel(0.5, 0.0, channel, audioBuffers::SamplesRange::allSamples());
+		wrapper.audioBufferView.applyGainRampToChannel(0.5, 0.0, channel, abl::SamplesRange::allSamples());
 		wrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(wrapper.audioBufferView.getSample(channel, i) == (TestType(i) * 10 / singleBufferSize) * (singleBufferSize - i) / (singleBufferSize * 2));
@@ -795,7 +795,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel buffer data is scal
 		const size_t rangeFrom = 2;
 		const size_t rangeCount = 4;
 		rangeWrapper.audioBufferView.resetIndex();
-		rangeWrapper.audioBufferView.applyGainRampToChannel(0.0, 1.0, channel, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+		rangeWrapper.audioBufferView.applyGainRampToChannel(0.0, 1.0, channel, abl::SamplesRange(rangeFrom, rangeCount));
 		rangeWrapper.audioBufferView.incrementIndex();
 		for (size_t i = 0; i < singleBufferSize; ++i) {
 			REQUIRE(rangeWrapper.audioBufferView.getSample(channel, i) == (i >= rangeFrom && i < rangeFrom + rangeCount ? TestType(i - rangeFrom) * 20 / singleBufferSize : 10));
@@ -811,7 +811,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is cleared with
 	const size_t startOffset = 20;
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
 
-	wrapper.audioBufferView.clear(audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.clear(abl::SamplesRange::allSamples());
 
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
@@ -823,7 +823,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is cleared with
 	const size_t rangeFrom = 5;
 	const size_t rangeCount = 3;
 	auto rangeWrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithFixedValue(channels, bufferSize, singleBufferSize, delayInSamples, startOffset, 4);
-	rangeWrapper.audioBufferView.clear(audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.clear(abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
 		for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -841,7 +841,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel Buffer data is clea
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
 	auto rangeWrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
 
-	wrapper.audioBufferView.clearChannel(1, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.clearChannel(1, abl::SamplesRange::allSamples());
 	wrapper.audioBufferView.incrementIndex();
 
 	for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -855,7 +855,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel Buffer data is clea
 
 	const size_t rangeFrom = 5;
 	const size_t rangeCount = 3;
-	rangeWrapper.audioBufferView.clearChannel(0, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.clearChannel(0, abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 
 	for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -888,7 +888,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is reversed wit
 		lastValues[channel] = wrapper.audioBufferView.getSample(channel, singleBufferSize - 1);
 	}
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.reverse(audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.reverse(abl::SamplesRange::allSamples());
 
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t channel = 0; channel < channels; ++channel) {
@@ -906,7 +906,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Buffer data is reversed wit
 		rangeLastValues[channel] = rangeWrapper.audioBufferView.getSample(channel, rangeFrom + rangeCount - 1);
 	}
 	rangeWrapper.audioBufferView.resetIndex();
-	rangeWrapper.audioBufferView.reverse(audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.reverse(abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 
 	for (size_t channel = 0; channel < channels; ++channel) {
@@ -939,7 +939,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel Buffer data is reve
 	}
 
 	wrapper.audioBufferView.resetIndex();
-	wrapper.audioBufferView.reverseChannel(1, audioBuffers::SamplesRange::allSamples());
+	wrapper.audioBufferView.reverseChannel(1, abl::SamplesRange::allSamples());
 
 	wrapper.audioBufferView.incrementIndex();
 	for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -960,7 +960,7 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] Channel Buffer data is reve
 		rangeLastValues[channel] = rangeWrapper.audioBufferView.getSample(channel, rangeFrom + rangeCount - 1);
 	}
 	rangeWrapper.audioBufferView.resetIndex();
-	rangeWrapper.audioBufferView.reverseChannel(0, audioBuffers::SamplesRange(rangeFrom, rangeCount));
+	rangeWrapper.audioBufferView.reverseChannel(0, abl::SamplesRange(rangeFrom, rangeCount));
 	rangeWrapper.audioBufferView.incrementIndex();
 
 	for (size_t i = 0; i < singleBufferSize; ++i) {
@@ -987,9 +987,9 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] View report correct higher 
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
 	wrapper.audioBufferView.incrementIndex();
 
-	REQUIRE(wrapper.audioBufferView.getHigherPeak(audioBuffers::SamplesRange::allSamples()) == 64);
-	REQUIRE(wrapper.audioBufferView.getHigherPeak(audioBuffers::SamplesRange(3, 3)) == 64);
-	REQUIRE(wrapper.audioBufferView.getHigherPeak(audioBuffers::SamplesRange(5, 2)) == 35);
+	REQUIRE(wrapper.audioBufferView.getHigherPeak(abl::SamplesRange::allSamples()) == 64);
+	REQUIRE(wrapper.audioBufferView.getHigherPeak(abl::SamplesRange(3, 3)) == 64);
+	REQUIRE(wrapper.audioBufferView.getHigherPeak(abl::SamplesRange(5, 2)) == 35);
 }
 
 TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] View report correct higher peak for channels", "[DelayedCircularAudioBufferView]", int, double) {
@@ -1002,9 +1002,9 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] View report correct higher 
 	wrapper.audioBufferView.incrementIndex();
 
 	for (size_t channel = 0; channel < channels; ++channel) {
-		REQUIRE(wrapper.audioBufferView.getHigherPeakForChannel(channel, audioBuffers::SamplesRange::allSamples()) == bufferSize * (channel + 1));
-		REQUIRE(wrapper.audioBufferView.getHigherPeakForChannel(channel, audioBuffers::SamplesRange(3, 3)) == bufferSize * (channel + 1));
-		REQUIRE(wrapper.audioBufferView.getHigherPeakForChannel(channel, audioBuffers::SamplesRange(5, 2)) == 3 + (bufferSize * channel));
+		REQUIRE(wrapper.audioBufferView.getHigherPeakForChannel(channel, abl::SamplesRange::allSamples()) == bufferSize * (channel + 1));
+		REQUIRE(wrapper.audioBufferView.getHigherPeakForChannel(channel, abl::SamplesRange(3, 3)) == bufferSize * (channel + 1));
+		REQUIRE(wrapper.audioBufferView.getHigherPeakForChannel(channel, abl::SamplesRange(5, 2)) == 3 + (bufferSize * channel));
 	}
 }
 
@@ -1017,10 +1017,10 @@ TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] View report correct rms lev
 	auto wrapper = DelayedCircularAudioBufferViewWrapper<TestType>::createWithIncrementalNumbers(channels, bufferSize, singleBufferSize, delayInSamples, startOffset);
 	wrapper.audioBufferView.incrementIndex();
 
-	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(0, audioBuffers::SamplesRange::allSamples()) == TestType(16.5));
-	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(1, audioBuffers::SamplesRange::allSamples()) == TestType(48.5));
-	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(0, audioBuffers::SamplesRange(3, 4)) == TestType(9.5));
-	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(1, audioBuffers::SamplesRange(4, 2)) == TestType(33.5)); //33 + 34 / 2
+	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(0, abl::SamplesRange::allSamples()) == TestType(16.5));
+	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(1, abl::SamplesRange::allSamples()) == TestType(48.5));
+	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(0, abl::SamplesRange(3, 4)) == TestType(9.5));
+	REQUIRE(wrapper.audioBufferView.getRMSLevelForChannel(1, abl::SamplesRange(4, 2)) == TestType(33.5)); //33 + 34 / 2
 }
 
 TEMPLATE_TEST_CASE("[DelayedCircularAudioBufferView] View report correct buffer size and channel count", "[DelayedCircularAudioBufferView]", int, double) {

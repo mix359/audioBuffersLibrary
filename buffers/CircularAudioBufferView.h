@@ -1,15 +1,15 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_CIRCULARAUDIOBUFFERVIEW_H
-#define AUDIO_BUFFERS_CIRCULARAUDIOBUFFERVIEW_H
+#ifndef ABL_CIRCULARAUDIOBUFFERVIEW_H
+#define ABL_CIRCULARAUDIOBUFFERVIEW_H
 
 #include "BasicCircularAudioBufferView.h"
 
-namespace audioBuffers {
+namespace abl {
 
 template <NumericType AudioSampleType>
-class CircularAudioBufferView : public BasicCircularAudioBufferView<AudioSampleType>, public CircularAudioBufferViewInterface<AudioSampleType> {
+class CircularAudioBufferView : public BasicCircularAudioBufferView<AudioSampleType> {
 public:
 //	CircularAudioBufferView(const juce::AudioBuffer<AudioSampleType> &buffer, size_t singleBufferSize, size_t bufferStartOffset = 0, const std::vector<size_t>& channelsMapping = {}, size_t startReadIndex = 0, size_t startWriteIndex = 0)
 //			: BasicCircularAudioBufferView<AudioSampleType>(buffer, singleBufferSize, bufferStartOffset, channelsMapping), m_readIndex{startReadIndex}, m_writeIndex{startWriteIndex} {}
@@ -33,11 +33,11 @@ public:
 		otherBuffer.m_writeIndex = 0;
 	}
 
-	std::unique_ptr<AudioBufferViewInterface<AudioSampleType>> getRangedView(SamplesRange samplesRange) override {
+	BasicCircularAudioBufferView<AudioSampleType> getRangedView(SamplesRange samplesRange) override {
 		auto sampleOffset = samplesRange.startSample + BasicCircularAudioBufferView<AudioSampleType>::m_bufferStartOffset;
 		auto& bufferSize = BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize;
 		if(sampleOffset > bufferSize) sampleOffset -= bufferSize;
-		return std::make_unique<CircularAudioBufferView>(
+		return CircularAudioBufferView(
 				BasicCircularAudioBufferView<AudioSampleType>::m_data,
 				BasicCircularAudioBufferView<AudioSampleType>::m_bufferChannelsCount,
 				bufferSize,
@@ -47,38 +47,38 @@ public:
 		);
 	}
 
-	void incrementReadIndex(std::optional<size_t> increment = {}) noexcept override {
+	void incrementReadIndex(std::optional<size_t> increment = {}) noexcept {
 		auto incrementValue = increment.has_value() ? increment.value() : BasicCircularAudioBufferView<AudioSampleType>::m_singleBufferSize;
 		assert(m_readIndex + incrementValue <= m_writeIndex); //@todo bound the increment value to save from this case?
 		m_readIndex.store(m_readIndex.load() + incrementValue);
 		BasicCircularAudioBufferView<AudioSampleType>::m_readSampleOffset.store(m_readIndex % BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize);
 	}
 
-	void incrementWriteIndex(std::optional<size_t> increment = {}) noexcept override {
+	void incrementWriteIndex(std::optional<size_t> increment = {}) noexcept {
 		m_writeIndex.store(m_writeIndex.load() + (increment.has_value() ? increment.value() : BasicCircularAudioBufferView<AudioSampleType>::m_singleBufferSize));
 		BasicCircularAudioBufferView<AudioSampleType>::m_writeSampleOffset.store(m_writeIndex % BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize);
 	}
 
-	void resetWriteIndexToReadIndexPosition() noexcept override {
+	void resetWriteIndexToReadIndexPosition() noexcept {
 		m_writeIndex.store(m_readIndex.load());
 		BasicCircularAudioBufferView<AudioSampleType>::m_writeSampleOffset.store(BasicCircularAudioBufferView<AudioSampleType>::m_readSampleOffset.load());
 	}
 
-	void resetIndexes() noexcept override {
+	void resetIndexes() noexcept {
 		m_readIndex = 0;
 		m_writeIndex = 0;
 		BasicCircularAudioBufferView<AudioSampleType>::m_readSampleOffset = 0;
 		BasicCircularAudioBufferView<AudioSampleType>::m_writeSampleOffset = 0;
 	}
 
-	size_t getReadIndex() const noexcept override { return m_readIndex.load();}
-	size_t getWriteIndex() const noexcept override { return m_writeIndex.load(); }
+	size_t getReadIndex() const noexcept { return m_readIndex.load();}
+	size_t getWriteIndex() const noexcept { return m_writeIndex.load(); }
 
-	[[nodiscard]] bool isDataAvailable() const noexcept override {
+	[[nodiscard]] bool isDataAvailable() const noexcept {
 		return m_writeIndex > m_readIndex;
 	}
 
-	[[nodiscard]] size_t getBaseBufferSize() const noexcept override { return BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize; }
+	[[nodiscard]] size_t getBaseBufferSize() const noexcept { return BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize; }
 
 protected:
 	std::atomic<size_t> m_readIndex;
@@ -87,4 +87,4 @@ protected:
 
 } // engine::showmanager
 
-#endif //AUDIO_BUFFERS_CIRCULARAUDIOBUFFERVIEW_H
+#endif //ABL_CIRCULARAUDIOBUFFERVIEW_H

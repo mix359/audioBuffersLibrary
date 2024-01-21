@@ -1,18 +1,21 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_OFFSETTEDREADCIRCULARAUDIOBUFFERCHANNELVIEW_H
-#define AUDIO_BUFFERS_OFFSETTEDREADCIRCULARAUDIOBUFFERCHANNELVIEW_H
+#ifndef ABL_OFFSETTEDREADCIRCULARAUDIOBUFFERCHANNELVIEW_H
+#define ABL_OFFSETTEDREADCIRCULARAUDIOBUFFERCHANNELVIEW_H
 
 #include <numeric>
 #include <span>
 
-#include "AudioBufferInterface.h"
+#include "AudioBufferChannelViewConcepts.h"
+#include "../memory/GenericPointerIterator.h"
+#include "../memory/CircularIterator.h"
+#include "../memory/VariantRandomAccessIteratorWrapper.h"
 
-namespace audioBuffers {
+namespace abl {
 
 template <NumericType AudioSampleType>
-class OffsettedReadCircularAudioBufferChannelView : public AudioBufferChannelViewInterface<AudioSampleType> {
+class OffsettedReadCircularAudioBufferChannelView {
 public:
 	OffsettedReadCircularAudioBufferChannelView(AudioSampleType* data, size_t bufferSize, size_t singleBufferSize, size_t readStartOffset, size_t writeStartOffset)
 			: m_data(data), m_bufferSize(bufferSize), m_singleBufferSize{singleBufferSize}, m_readStartOffset{readStartOffset}, m_writeStartOffset{writeStartOffset}
@@ -58,10 +61,10 @@ public:
 		otherBuffer.m_lastWriteSampleIndex = 0;
 	}
 
-	using GainType = typename AudioBufferViewInterface<AudioSampleType>::GainType;
+	using GainType = typename std::conditional<std::is_integral_v<AudioSampleType>, double, AudioSampleType>::type;
 	using iterator = CircularIterator<AudioSampleType>;
 	using const_iterator = const CircularIterator<AudioSampleType>;
-	using wrapperIterator = typename AudioBufferChannelViewInterface<AudioSampleType>::iterator;
+	using wrapperIterator = VariantRandomAccessIteratorWrapper<AudioSampleType, GenericPointerIterator<AudioSampleType>, CircularIterator<AudioSampleType>>;
 	wrapperIterator begin() const noexcept { return wrapperIterator(const_iterator(m_data, m_data + m_bufferSize, m_data + m_readStartOffset, 0)); }
 	wrapperIterator end() const noexcept { return wrapperIterator(const_iterator(m_data, m_data + m_bufferSize, m_data + m_lastReadSampleIndex + 1, m_singleBufferSize)); }
 	wrapperIterator writeBegin() const noexcept { return wrapperIterator(iterator(m_data, m_data + m_bufferSize, m_data + m_writeStartOffset, 0)); }
@@ -89,7 +92,7 @@ public:
 		m_data[getOffsettedBoundedWriteSampleIndex(index)] += sample;
 	}
 
-	void copyFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, const SamplesRange &destinationSamplesRange, GainType gain = GainType(1)) {
+	void copyFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, const SamplesRange &destinationSamplesRange, GainType gain = GainType(1)) {
 		auto samplesCount = getSamplesCountFromRange(destinationSamplesRange);
 		assert(samplesCount <= sourceBufferChannel.getBufferSize());
 		assert(destinationSamplesRange.startSample + samplesCount <= m_singleBufferSize);
@@ -99,7 +102,7 @@ public:
 		}
 	}
 
-	void copyWithRampFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange) {
+	void copyWithRampFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange) {
 		if(startGain == endGain) {
 			copyFrom(sourceBufferChannel, destinationSamplesRange, startGain);
 			return;
@@ -117,7 +120,7 @@ public:
 		}
 	}
 
-	void addFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, const SamplesRange &destinationSamplesRange, GainType gain = GainType(1)) {
+	void addFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, const SamplesRange &destinationSamplesRange, GainType gain = GainType(1)) {
 		auto samplesCount = getSamplesCountFromRange(destinationSamplesRange);
 		assert(samplesCount <= sourceBufferChannel.getBufferSize());
 		assert(destinationSamplesRange.startSample + samplesCount <= m_singleBufferSize);
@@ -127,7 +130,7 @@ public:
 		}
 	}
 
-	void addWithRampFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange) {
+	void addWithRampFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange) {
 		if(startGain == endGain) {
 			copyFrom(sourceBufferChannel, destinationSamplesRange, startGain);
 			return;
@@ -255,6 +258,6 @@ protected:
 	size_t m_lastWriteSampleIndex;
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_OFFSETTEDREADCIRCULARAUDIOBUFFERCHANNELVIEW_H
+#endif //ABL_OFFSETTEDREADCIRCULARAUDIOBUFFERCHANNELVIEW_H

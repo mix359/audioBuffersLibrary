@@ -1,8 +1,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_CONCEPTS_H
-#define AUDIO_BUFFERS_CONCEPTS_H
+#ifndef ABL_NUMERIC_CONCEPT_H
+#define ABL_NUMERIC_CONCEPT_H
 
 #include <type_traits>
 
@@ -15,4 +15,4 @@ concept NumericType = requires(T param)
 	requires !std::is_pointer_v<T>;
 };
 
-#endif //AUDIO_BUFFERS_CONCEPTS_H
+#endif //ABL_NUMERIC_CONCEPT_H

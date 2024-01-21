@@ -1,15 +1,15 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_DELAYEDCIRCULARAUDIOBUFFERVIEW_H
-#define AUDIO_BUFFERS_DELAYEDCIRCULARAUDIOBUFFERVIEW_H
+#ifndef ABL_DELAYEDCIRCULARAUDIOBUFFERVIEW_H
+#define ABL_DELAYEDCIRCULARAUDIOBUFFERVIEW_H
 
 #include "BasicCircularAudioBufferView.h"
 
-namespace audioBuffers {
+namespace abl {
 
 template <NumericType AudioSampleType>
-class DelayedCircularAudioBufferView : public BasicCircularAudioBufferView<AudioSampleType>, public DelayedCircularAudioBufferViewInterface<AudioSampleType> {
+class DelayedCircularAudioBufferView : public BasicCircularAudioBufferView<AudioSampleType> {
 public:
 //	DelayedCircularAudioBufferView(const juce::AudioBuffer<AudioSampleType> &buffer, size_t singleBufferSize, size_t delayInSamples, size_t bufferStartOffset = 0, const std::vector<size_t>& channelsMapping = {}, size_t startIndex = 0)
 //			: BasicCircularAudioBufferView<AudioSampleType>(buffer, singleBufferSize, bufferStartOffset, channelsMapping), m_index{startIndex}, m_delayInSamples{delayInSamples}
@@ -41,11 +41,11 @@ public:
 		otherBuffer.m_delayInSamples = 0;
 	}
 
-	std::unique_ptr<AudioBufferViewInterface<AudioSampleType>> getRangedView(SamplesRange samplesRange) override {
+	BasicCircularAudioBufferView<AudioSampleType> getRangedView(SamplesRange samplesRange) override {
 		auto sampleOffset = samplesRange.startSample + BasicCircularAudioBufferView<AudioSampleType>::m_bufferStartOffset;
 		auto& bufferSize = BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize;
 		if(sampleOffset > bufferSize) sampleOffset -= bufferSize;
-		return std::make_unique<DelayedCircularAudioBufferView>(
+		return DelayedCircularAudioBufferView(
 				BasicCircularAudioBufferView<AudioSampleType>::m_data,
 				BasicCircularAudioBufferView<AudioSampleType>::m_bufferChannelsCount,
 				bufferSize,
@@ -56,28 +56,28 @@ public:
 		);
 	}
 
-	void incrementIndex(std::optional<size_t> increment = {}) noexcept override {
+	void incrementIndex(std::optional<size_t> increment = {}) noexcept {
 		m_index.store(m_index.load() + (increment.has_value() ? increment.value() : BasicCircularAudioBufferView<AudioSampleType>::m_singleBufferSize));
 		BasicCircularAudioBufferView<AudioSampleType>::m_readSampleOffset.store(m_index % BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize);
 		BasicCircularAudioBufferView<AudioSampleType>::m_writeSampleOffset.store(BasicCircularAudioBufferView<AudioSampleType>::m_readSampleOffset + m_delayInSamples);
 	}
 
-	void resetIndex() noexcept override {
+	void resetIndex() noexcept {
 		m_index = 0;
 		BasicCircularAudioBufferView<AudioSampleType>::m_readSampleOffset.store(0);
 		BasicCircularAudioBufferView<AudioSampleType>::m_writeSampleOffset.store(m_delayInSamples);
 	}
 
-	size_t getIndex() const noexcept override { return m_index.load(); }
+	size_t getIndex() const noexcept { return m_index.load(); }
 
-	size_t getDelayInSamples() const noexcept override { return m_delayInSamples.load(); }
-	void setDelayInSamples(size_t delay) noexcept override {
+	size_t getDelayInSamples() const noexcept { return m_delayInSamples.load(); }
+	void setDelayInSamples(size_t delay) noexcept {
 		m_delayInSamples.store(delay);
 		BasicCircularAudioBufferView<AudioSampleType>::m_writeSampleOffset.store(BasicCircularAudioBufferView<AudioSampleType>::m_readSampleOffset + m_delayInSamples);
 		//@todo resample the difference?
 	}
 
-	[[nodiscard]] size_t getBaseBufferSize() const noexcept override { return BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize; }
+	[[nodiscard]] size_t getBaseBufferSize() const noexcept { return BasicCircularAudioBufferView<AudioSampleType>::m_bufferSize; }
 
 protected:
 	std::atomic<size_t> m_index;
@@ -86,4 +86,4 @@ protected:
 
 } // engine::showmanager
 
-#endif //AUDIO_BUFFERS_DELAYEDCIRCULARAUDIOBUFFERVIEW_H
+#endif //ABL_DELAYEDCIRCULARAUDIOBUFFERVIEW_H

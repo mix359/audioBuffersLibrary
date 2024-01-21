@@ -1,13 +1,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_DELAYEDCIRCULARAUDIOBUFFER_H
-#define AUDIO_BUFFERS_DELAYEDCIRCULARAUDIOBUFFER_H
+#ifndef ABL_DELAYEDCIRCULARAUDIOBUFFER_H
+#define ABL_DELAYEDCIRCULARAUDIOBUFFER_H
 
 #include "DelayedCircularAudioBufferView.h"
 #include "AudioBufferWithMemoryManagement.h"
 
-namespace audioBuffers {
+namespace abl {
 
 template <NumericType AudioSampleType>
 class DelayedCircularAudioBuffer : public DelayedCircularAudioBufferView<AudioSampleType>, public AudioBufferWithMemoryManagement<AudioSampleType> {
@@ -41,7 +41,7 @@ public:
 //	}
 
 	//Full buffer copy
-	explicit DelayedCircularAudioBuffer(const AudioBufferViewInterface<AudioSampleType> &sourceBuffer, size_t singleBufferSize, size_t delayInSamples, size_t bufferStartOffset = 0, const std::vector<size_t>& channelsMapping = {}, size_t startIndex = 0)
+	explicit DelayedCircularAudioBuffer(const AudioBufferReadableType<AudioSampleType> auto &sourceBuffer, size_t singleBufferSize, size_t delayInSamples, size_t bufferStartOffset = 0, const std::vector<size_t>& channelsMapping = {}, size_t startIndex = 0)
 		: DelayedCircularAudioBufferView<AudioSampleType>(prepareAllocatedSpace(sourceBuffer.getChannelsCount(), sourceBuffer.getBufferSize(), sourceBuffer.isEmpty()), sourceBuffer.getChannelsCount(), sourceBuffer.getBufferSize(), singleBufferSize, delayInSamples, bufferStartOffset, channelsMapping, startIndex)
 	{
 		if(!sourceBuffer.isEmpty()) {
@@ -173,6 +173,6 @@ protected:
 };
 
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_DELAYEDCIRCULARAUDIOBUFFER_H
+#endif //ABL_DELAYEDCIRCULARAUDIOBUFFER_H

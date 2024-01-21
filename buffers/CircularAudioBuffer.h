@@ -1,13 +1,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_CIRCULARAUDIOBUFFER_H
-#define AUDIO_BUFFERS_CIRCULARAUDIOBUFFER_H
+#ifndef ABL_CIRCULARAUDIOBUFFER_H
+#define ABL_CIRCULARAUDIOBUFFER_H
 
 #include "CircularAudioBufferView.h"
 #include "AudioBufferWithMemoryManagement.h"
+#include "AudioBufferViewConcepts.h"
 
-namespace audioBuffers {
+namespace abl {
 
 template <NumericType AudioSampleType>
 class CircularAudioBuffer : public CircularAudioBufferView<AudioSampleType>, public AudioBufferWithMemoryManagement<AudioSampleType> {
@@ -46,7 +47,7 @@ public:
 //	}
 
 	//Full buffer copy
-	explicit CircularAudioBuffer(const AudioBufferViewInterface<AudioSampleType> &sourceBuffer, size_t singleBufferSize, size_t bufferStartOffset = 0, const std::vector<size_t>& channelsMapping = {}, size_t startReadIndex = 0, size_t startWriteIndex = 0)
+	explicit CircularAudioBuffer(const AudioBufferReadableType<AudioSampleType> auto &sourceBuffer, size_t singleBufferSize, size_t bufferStartOffset = 0, const std::vector<size_t>& channelsMapping = {}, size_t startReadIndex = 0, size_t startWriteIndex = 0)
 		: CircularAudioBufferView<AudioSampleType>(prepareAllocatedSpace(sourceBuffer.getChannelsCount(), sourceBuffer.getBufferSize(), sourceBuffer.isEmpty()), sourceBuffer.getChannelsCount(), sourceBuffer.getBufferSize(), singleBufferSize, bufferStartOffset, channelsMapping, startReadIndex, startWriteIndex)
 	{
 		if(!sourceBuffer.isEmpty()) {
@@ -178,6 +179,6 @@ protected:
 
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_CIRCULARAUDIOBUFFER_H
+#endif //ABL_CIRCULARAUDIOBUFFER_H

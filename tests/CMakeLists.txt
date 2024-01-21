@@ -22,7 +22,7 @@ target_link_libraries(AudioBufferTests PRIVATE Catch2::Catch2WithMain)
 add_executable(AudioBufferBenchmark Benchmarks.cpp)
 
 target_compile_features(AudioBufferBenchmark PRIVATE cxx_std_20)
-#target_compile_options(AudioBufferBenchmark PRIVATE -O3)
+target_compile_options(AudioBufferBenchmark PRIVATE -O3)
 
 target_link_libraries(AudioBufferBenchmark PRIVATE audioBuffers)
 target_link_libraries(AudioBufferBenchmark PRIVATE Catch2::Catch2WithMain)

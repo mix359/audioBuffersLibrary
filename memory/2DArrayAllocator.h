@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace audioBuffers {
+namespace abl {
 
 template<typename T>
 T** allocateContiguous2DArray(size_t rows, size_t rowSize, bool zeroData = true) {

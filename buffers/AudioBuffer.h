@@ -1,14 +1,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_AUDIOBUFFER_H
-#define AUDIO_BUFFERS_AUDIOBUFFER_H
+#ifndef ABL_AUDIOBUFFER_H
+#define ABL_AUDIOBUFFER_H
 
-#include "AudioBufferInterface.h"
 #include "AudioBufferView.h"
 #include "AudioBufferWithMemoryManagement.h"
 
-namespace audioBuffers {
+namespace abl {
 
 template <NumericType AudioSampleType>
 class AudioBuffer : public AudioBufferView<AudioSampleType>, public AudioBufferWithMemoryManagement<AudioSampleType> {
@@ -45,7 +44,7 @@ public:
 //		}
 //	}
 
-	explicit AudioBuffer(const AudioBufferViewInterface<AudioSampleType> &sourceBuffer, const std::vector<size_t>& channelsMapping = {})
+	explicit AudioBuffer(const AudioBufferReadableType<AudioSampleType> auto &sourceBuffer, const std::vector<size_t>& channelsMapping = {})
 		: AudioBufferView<AudioSampleType>(prepareAllocatedSpace(sourceBuffer.getChannelsCount(), sourceBuffer.getBufferSize(), sourceBuffer.isEmpty()), sourceBuffer.getChannelsCount(), sourceBuffer.getBufferSize(), channelsMapping)
 	{
 		if(!sourceBuffer.isEmpty()) {
@@ -135,6 +134,6 @@ protected:
 
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_AUDIOBUFFER_H
+#endif //ABL_AUDIOBUFFER_H

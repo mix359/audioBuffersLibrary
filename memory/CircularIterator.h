@@ -1,12 +1,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_CIRCULARITERATOR_H
-#define AUDIO_BUFFERS_CIRCULARITERATOR_H
+#ifndef ABL_CIRCULARITERATOR_H
+#define ABL_CIRCULARITERATOR_H
 
 #include <iterator>
 
-namespace audioBuffers {
+namespace abl {
 
 template <typename T>
 class CircularIterator {
@@ -83,6 +83,6 @@ private:
 	size_t m_index;
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_CIRCULARITERATOR_H
+#endif //ABL_CIRCULARITERATOR_H

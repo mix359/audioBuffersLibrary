@@ -1,12 +1,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_GENERICPOINTERITERATOR_H
-#define AUDIO_BUFFERS_GENERICPOINTERITERATOR_H
+#ifndef ABL_GENERICPOINTERITERATOR_H
+#define ABL_GENERICPOINTERITERATOR_H
 
 #include <iterator>
 
-namespace audioBuffers {
+namespace abl {
 
 template <typename T>
 class GenericPointerIterator {
@@ -46,6 +46,6 @@ private:
 	T* m_current;
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_GENERICPOINTERITERATOR_H
+#endif //ABL_GENERICPOINTERITERATOR_H

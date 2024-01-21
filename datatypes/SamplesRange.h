@@ -1,12 +1,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_SAMPLESRANGE_H
-#define AUDIO_BUFFERS_SAMPLESRANGE_H
+#ifndef ABL_SAMPLESRANGE_H
+#define ABL_SAMPLESRANGE_H
 
 #include <assert.h>
 
-namespace audioBuffers {
+namespace abl {
 
 struct SamplesRange {
 	size_t startSample;
@@ -39,6 +39,6 @@ struct SamplesRange {
 	[[nodiscard]] bool haveRange() const { return startSample > 0 || samplesCount > 0; }
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_SAMPLESRANGE_H
+#endif //ABL_SAMPLESRANGE_H

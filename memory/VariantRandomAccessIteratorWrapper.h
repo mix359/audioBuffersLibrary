@@ -1,15 +1,15 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_VARIANTRANDOMACCESSITERATORWRAPPER_H
-#define AUDIO_BUFFERS_VARIANTRANDOMACCESSITERATORWRAPPER_H
+#ifndef ABL_VARIANTRANDOMACCESSITERATORWRAPPER_H
+#define ABL_VARIANTRANDOMACCESSITERATORWRAPPER_H
 
 #include <concepts>
 #include <iterator>
 #include <cassert>
 #include <boost/variant2.hpp>
 
-namespace audioBuffers {
+namespace abl {
 
 template <typename _Iterator, typename _Value, typename _Reference, typename _Difference>
 concept random_access_iterator_for_value = std::random_access_iterator<_Iterator>
@@ -167,6 +167,6 @@ protected:
 	iterator_type m_iterator;
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_VARIANTRANDOMACCESSITERATORWRAPPER_H
+#endif //ABL_VARIANTRANDOMACCESSITERATORWRAPPER_H

@@ -14,7 +14,7 @@ TEMPLATE_TEST_CASE("[AudioBufferChannelView] Benchmark normal access vs buffer v
 	size_t bufferSize = 16;
 
 	auto data = new TestType[bufferSize];
-	audioBuffers::AudioBufferChannelView<TestType> audioBufferChannelView{data, bufferSize};
+	abl::AudioBufferChannelView<TestType> audioBufferChannelView{data, bufferSize};
 	std::iota(data, data + bufferSize, 1);
 
 	BENCHMARK("Normal Iterator") {
@@ -35,7 +35,7 @@ TEMPLATE_TEST_CASE("[AudioBufferChannelView] Benchmark normal access vs buffer v
 
 	BENCHMARK("AudioBufferChannelView Iterator no variant") {
         auto sum = 0;
-        for (auto iter = audioBufferChannelView.test_begin(); iter != audioBufferChannelView.test_end(); ++iter) {
+        for (auto iter = audioBufferChannelView.unwrapper_begin(); iter != audioBufferChannelView.unwrapped_end(); ++iter) {
             sum += *iter;
         }
         return sum;
@@ -64,7 +64,7 @@ TEMPLATE_TEST_CASE("[AudioBufferView] Benchmark normal access vs buffer view", "
 		startValue += bufferSize;
 	}
 
-	audioBuffers::AudioBufferView<TestType> audioBufferView{data, channels, bufferSize};
+	abl::AudioBufferView<TestType> audioBufferView{data, channels, bufferSize};
 
 	BENCHMARK("Normal Iterator") {
          auto sum = 0;
@@ -79,30 +79,31 @@ TEMPLATE_TEST_CASE("[AudioBufferView] Benchmark normal access vs buffer view", "
 	BENCHMARK("AudioBufferView Iterator") {
 	      auto sum = 0;
 	      for (auto&& channelView: audioBufferView) {
-	          for (auto &&sample: *channelView) {
+	          for (auto &&sample: channelView) {
 	              sum += sample;
 	          }
 	      }
 	      return sum;
 	};
 
-	BENCHMARK("AudioBufferView Iterator no variant") {
-         auto sum = 0;
-         for (auto&& channelView: audioBufferView) {
-             auto view = static_cast<audioBuffers::AudioBufferChannelView<TestType>*>(channelView.get());
-             for (auto iter = view->test_begin(); iter != view->test_end(); ++iter) {
-                 sum += *iter;
-             }
-         }
-         return sum;
-	};
+//	BENCHMARK("AudioBufferView Iterator no variant") {
+//         auto sum = 0;
+//         for (auto&& channelView: audioBufferView) {
+//			 if(auto view = boost::variant2::get_if<abl::AudioBufferChannelView<TestType>>(&channelView)) {
+//				 for (auto iter = view->unwrapper_begin(); iter != view->unwrapped_end(); ++iter) {
+//					 sum += *iter;
+//				 }
+//			 }
+//         }
+//         return sum;
+//	};
 
 	BENCHMARK("AudioBufferView operator[]") {
         auto sum = 0;
         for(size_t channel = 0; channel < channels; ++channel) {
             auto view = audioBufferView[channel];
             for(size_t i = 0; i < bufferSize; ++i) {
-                sum += (*view)[i];
+                sum += (view)[i];
             }
         }
         return sum;

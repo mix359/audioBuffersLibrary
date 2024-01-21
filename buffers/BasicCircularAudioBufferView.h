@@ -1,17 +1,19 @@
 // This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0.
 // If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef AUDIO_BUFFERS_BASICCIRCULARAUDIOBUFFERVIEW_H
-#define AUDIO_BUFFERS_BASICCIRCULARAUDIOBUFFERVIEW_H
+#ifndef ABL_BASICCIRCULARAUDIOBUFFERVIEW_H
+#define ABL_BASICCIRCULARAUDIOBUFFERVIEW_H
 
-#include "AudioBufferInterface.h"
+#include "AudioBufferViewConcepts.h"
 #include "CircularAudioBufferChannelView.h"
 #include "OffsettedReadCircularAudioBufferChannelView.h"
+#include "AudioBufferChannelViewWrapper.h"
+#include "../memory/ParentReferencingIterator.h"
 
-namespace audioBuffers {
+namespace abl {
 
 template <NumericType AudioSampleType>
-class BasicCircularAudioBufferView : virtual public AudioBufferViewInterface<AudioSampleType> {
+class BasicCircularAudioBufferView {
 public:
 //	BasicCircularAudioBufferView(const juce::AudioBuffer<AudioSampleType> &buffer, size_t singleBufferSize, size_t bufferStartOffset = 0, const std::vector<size_t>& channelsMapping = {})
 //			: m_data(buffer.getArrayOfWritePointers()),
@@ -67,78 +69,78 @@ public:
 		otherBuffer.m_writeSampleOffset = 0;
 	}
 
-	using GainType = typename AudioBufferViewInterface<AudioSampleType>::GainType;
-	using iterator = ParentReferencingReturningUniquePtrIterator<BasicCircularAudioBufferView, AudioBufferChannelViewInterface<AudioSampleType>>;
-	using const_iterator = ParentReferencingReturningUniquePtrIterator<const BasicCircularAudioBufferView, const AudioBufferChannelViewInterface<AudioSampleType>>;
+	using GainType = typename std::conditional<std::is_integral_v<AudioSampleType>, double, AudioSampleType>::type;
+	using iterator = ParentReferencingIterator<BasicCircularAudioBufferView, AudioBufferChannelViewWrapper<AudioSampleType>>;
+	using const_iterator = ParentReferencingIterator<const BasicCircularAudioBufferView, const AudioBufferChannelViewWrapper<AudioSampleType>>;
 	iterator begin() { return iterator(0, *this); }
 	iterator end() { return iterator(getChannelsCount(), *this); }
 
 //	using wrapperIterator = typename AudioBufferViewInterface<AudioSampleType>::iterator;
-//	wrapperIterator begin() const noexcept override { return wrapperIterator(iterator(0, *this)); }
-//	wrapperIterator end() const noexcept override { return wrapperIterator(iterator(getChannelsCount(), *this)); }
+//	wrapperIterator begin() const noexcept { return wrapperIterator(iterator(0, *this)); }
+//	wrapperIterator end() const noexcept { return wrapperIterator(iterator(getChannelsCount(), *this)); }
 
 	//@todo const iterator?
 
-	bool isEmpty() const override { return m_bufferChannelsCount < 1 || m_bufferSize < 1 || m_singleBufferSize < 1 || !m_data; }
+	bool isEmpty() const { return m_bufferChannelsCount < 1 || m_bufferSize < 1 || m_singleBufferSize < 1 || !m_data; }
 
-	std::unique_ptr<AudioBufferChannelViewInterface<AudioSampleType>> operator[](size_t channel) override {
+	AudioBufferChannelViewWrapper<AudioSampleType> operator[](size_t channel) {
 		return getChannelView(channel);
 	}
 
-	std::unique_ptr<const AudioBufferChannelViewInterface<AudioSampleType>> operator[](size_t channel) const override {
+	const AudioBufferChannelViewWrapper<AudioSampleType> operator[](size_t channel) const {
 		return getChannelView(channel);
 	}
 
-	std::unique_ptr<const AudioBufferChannelViewInterface<AudioSampleType>> getReadOnlyChannelView(size_t channel, SamplesRange samplesRange = {}) const {
+	const AudioBufferChannelViewWrapper<AudioSampleType> getReadOnlyChannelView(size_t channel, SamplesRange samplesRange = {}) const {
 		assert(channel < getChannelsCount());
 		if(samplesRange.haveRange()) {
-			return std::make_unique<const CircularAudioBufferChannelView<AudioSampleType>>(getRangedReadChannelView(channel, samplesRange.startSample, samplesRange.getRealSamplesCount(m_singleBufferSize)));
+			return AudioBufferChannelViewWrapper<AudioSampleType>(CircularAudioBufferChannelView<AudioSampleType>(getRangedReadChannelView(channel, samplesRange.startSample, samplesRange.getRealSamplesCount(m_singleBufferSize))));
 		} else {
-			return std::make_unique<const CircularAudioBufferChannelView<AudioSampleType>>(getReadChannelView(channel));
+			return AudioBufferChannelViewWrapper<AudioSampleType>(CircularAudioBufferChannelView<AudioSampleType>(getReadChannelView(channel)));
 		}
 	}
 
-	std::unique_ptr<AudioBufferChannelViewInterface<AudioSampleType>> getWriteAreaChannelView(size_t channel, SamplesRange samplesRange = {}) const {
+	AudioBufferChannelViewWrapper<AudioSampleType> getWriteAreaChannelView(size_t channel, SamplesRange samplesRange = {}) const {
 		assert(channel < getChannelsCount());
 		if(samplesRange.haveRange()) {
-			return std::make_unique<CircularAudioBufferChannelView<AudioSampleType>>(getRangedWriteChannelView(channel, samplesRange.startSample, samplesRange.getRealSamplesCount(m_singleBufferSize)));
+			return AudioBufferChannelViewWrapper<AudioSampleType>(CircularAudioBufferChannelView<AudioSampleType>(getRangedWriteChannelView(channel, samplesRange.startSample, samplesRange.getRealSamplesCount(m_singleBufferSize))));
 		} else {
-			return std::make_unique<CircularAudioBufferChannelView<AudioSampleType>>(getWriteChannelView(channel));
+			return AudioBufferChannelViewWrapper<AudioSampleType>(CircularAudioBufferChannelView<AudioSampleType>(getWriteChannelView(channel)));
 		}
 	}
 
-	std::unique_ptr<AudioBufferChannelViewInterface<AudioSampleType>> getChannelView(size_t channel, SamplesRange samplesRange = {}) const override {
+	AudioBufferChannelViewWrapper<AudioSampleType> getChannelView(size_t channel, SamplesRange samplesRange = {}) const {
 		assert(channel < getChannelsCount());
 		if(samplesRange.haveRange()) {
-			return std::make_unique<OffsettedReadCircularAudioBufferChannelView<AudioSampleType>>(getRangedOffsettedChannelView(channel, samplesRange.startSample, samplesRange.getRealSamplesCount(m_singleBufferSize)));
+			return AudioBufferChannelViewWrapper<AudioSampleType>(OffsettedReadCircularAudioBufferChannelView<AudioSampleType>(getRangedOffsettedChannelView(channel, samplesRange.startSample, samplesRange.getRealSamplesCount(m_singleBufferSize))));
 		} else {
-			return std::make_unique<OffsettedReadCircularAudioBufferChannelView<AudioSampleType>>(getOffsettedChannelView(channel));
+			return AudioBufferChannelViewWrapper<AudioSampleType>(OffsettedReadCircularAudioBufferChannelView<AudioSampleType>(getOffsettedChannelView(channel)));
 		}
 	}
 
-	std::unique_ptr<AudioBufferViewInterface<AudioSampleType>> getRangedView(SamplesRange samplesRange = {}) override {
+	virtual BasicCircularAudioBufferView<AudioSampleType> getRangedView(SamplesRange samplesRange = {}) {
 		auto samplesCount = samplesRange.getRealSamplesCount(m_singleBufferSize);
 		assert(samplesRange.startSample + samplesCount <= m_singleBufferSize);
 		auto sampleOffset = (samplesRange.startSample + m_bufferStartOffset) % m_bufferSize;
-		return std::make_unique<BasicCircularAudioBufferView>(m_data, m_bufferChannelsCount, m_bufferSize, samplesRange.getRealSamplesCount(m_singleBufferSize), sampleOffset, m_channelsMapping);
+		return BasicCircularAudioBufferView(m_data, m_bufferChannelsCount, m_bufferSize, samplesRange.getRealSamplesCount(m_singleBufferSize), sampleOffset, m_channelsMapping);
 	}
 
-	AudioSampleType getSample(size_t channel, size_t index) const override {
+	AudioSampleType getSample(size_t channel, size_t index) const {
 		assert(channel < getChannelsCount());
 		return getReadChannelView(channel).getSample(index);
 	}
 
-	void setSample(size_t destinationChannel, size_t destinationIndex, const AudioSampleType sample) override {
+	void setSample(size_t destinationChannel, size_t destinationIndex, const AudioSampleType sample) {
 		assert(destinationChannel < getChannelsCount());
 		getWriteChannelView(destinationChannel).setSample(destinationIndex, sample);
 	}
 
-	void addSample(size_t destinationChannel, size_t destinationIndex, const AudioSampleType sample) override {
+	void addSample(size_t destinationChannel, size_t destinationIndex, const AudioSampleType sample) {
 		assert(destinationChannel < getChannelsCount());
 		getWriteChannelView(destinationChannel).addSample(destinationIndex, sample);
 	}
 
-	void copyFrom(const AudioBufferViewInterface<AudioSampleType>& sourceBuffer, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) override {
+	void copyFrom(const AudioBufferReadableType<AudioSampleType> auto &sourceBuffer, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) {
 		assert(sourceBuffer.getChannelsCount() >= getChannelsCount());
 		auto samplesCount = destinationSamplesRange.getRealSamplesCount(m_singleBufferSize);
 		for(size_t destinationChannel = 0; destinationChannel < getChannelsCount(); destinationChannel++) {
@@ -149,7 +151,7 @@ public:
 		}
 	}
 
-	void copyWithRampFrom(const AudioBufferViewInterface<AudioSampleType>& sourceBuffer, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) override {
+	void copyWithRampFrom(const AudioBufferReadableType<AudioSampleType> auto &sourceBuffer, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) {
 		if(startGain == endGain) {
 			copyFrom(sourceBuffer, destinationSamplesRange, startGain);
 			return;
@@ -171,17 +173,17 @@ public:
 		}
 	}
 
-	void copyIntoChannelFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, size_t destinationChannel, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) override {
+	void copyIntoChannelFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, size_t destinationChannel, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) {
 		assert(destinationChannel < getChannelsCount());
 		getWriteChannelView(destinationChannel).copyFrom(sourceBufferChannel, destinationSamplesRange, gain);
 	}
 
-	void copyIntoChannelWithRampFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, size_t destinationChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) override {
+	void copyIntoChannelWithRampFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, size_t destinationChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) {
 		assert(destinationChannel < getChannelsCount());
 		getWriteChannelView(destinationChannel).copyWithRampFrom(sourceBufferChannel, startGain, endGain, destinationSamplesRange);
 	}
 
-	void addFrom(const AudioBufferViewInterface<AudioSampleType>& sourceBuffer, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) override {
+	void addFrom(const AudioBufferReadableType<AudioSampleType> auto &sourceBuffer, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) {
 		assert(sourceBuffer.getChannelsCount() >= getChannelsCount());
 		auto samplesCount = destinationSamplesRange.getRealSamplesCount(m_singleBufferSize);
 		for(size_t destinationChannel = 0; destinationChannel < getChannelsCount(); destinationChannel++) {
@@ -192,7 +194,7 @@ public:
 		}
 	}
 
-	void addWithRampFrom(const AudioBufferViewInterface<AudioSampleType>& sourceBuffer, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) override {
+	void addWithRampFrom(const AudioBufferReadableType<AudioSampleType> auto &sourceBuffer, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) {
 		if(startGain == endGain) {
 			copyFrom(sourceBuffer, destinationSamplesRange, startGain);
 			return;
@@ -214,61 +216,61 @@ public:
 		}
 	}
 
-	void addIntoChannelFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, size_t destinationChannel, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) override {
+	void addIntoChannelFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, size_t destinationChannel, const SamplesRange &destinationSamplesRange = {}, GainType gain = GainType(1)) {
 		assert(destinationChannel < getChannelsCount());
 		getWriteChannelView(destinationChannel).addFrom(sourceBufferChannel, destinationSamplesRange, gain);
 	}
 
-	void addIntoChannelWithRampFrom(const AudioBufferChannelViewInterface<AudioSampleType> &sourceBufferChannel, size_t destinationChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) override {
+	void addIntoChannelWithRampFrom(const AudioBufferChannelReadableType<AudioSampleType> auto &sourceBufferChannel, size_t destinationChannel, GainType startGain, GainType endGain, const SamplesRange &destinationSamplesRange = {}) {
 		assert(destinationChannel < getChannelsCount());
 		getWriteChannelView(destinationChannel).addWithRampFrom(sourceBufferChannel, startGain, endGain, destinationSamplesRange);
 	}
 
-	void applyGain(GainType gain, const SamplesRange &samplesRange = {}) override {
+	void applyGain(GainType gain, const SamplesRange &samplesRange = {}) {
 		for(size_t channel = 0; channel < getChannelsCount(); ++channel) {
 			getWriteChannelView(channel).applyGain(gain,samplesRange);
 		}
 	}
 
-	void applyGainToChannel(GainType gain, size_t channel, const SamplesRange &samplesRange = {}) override {
+	void applyGainToChannel(GainType gain, size_t channel, const SamplesRange &samplesRange = {}) {
 		assert(channel < getChannelsCount());
 		getWriteChannelView(channel).applyGain(gain,samplesRange);
 	}
 
-	void applyGainRamp(GainType startGain, GainType endGain, const SamplesRange &samplesRange = {}) override {
+	void applyGainRamp(GainType startGain, GainType endGain, const SamplesRange &samplesRange = {}) {
 		for(size_t channel = 0; channel < getChannelsCount(); ++channel) {
 			getWriteChannelView(channel).applyGainRamp(startGain, endGain, samplesRange);
 		}
 	}
 
-	void applyGainRampToChannel(GainType startGain, GainType endGain, size_t channel, const SamplesRange &samplesRange = {}) override {
+	void applyGainRampToChannel(GainType startGain, GainType endGain, size_t channel, const SamplesRange &samplesRange = {}) {
 		assert(channel < getChannelsCount());
 		getWriteChannelView(channel).applyGainRamp(startGain, endGain, samplesRange);
 	}
 
-	void clear(const SamplesRange &samplesRange = {}) override {
+	void clear(const SamplesRange &samplesRange = {}) {
 		for(size_t channel = 0; channel < getChannelsCount(); ++channel) {
 			getWriteChannelView(channel).clear(samplesRange);
 		}
 	}
 
-	void clearChannel(size_t channel, const SamplesRange &samplesRange = {}) override {
+	void clearChannel(size_t channel, const SamplesRange &samplesRange = {}) {
 		assert(channel < getChannelsCount());
 		getWriteChannelView(channel).clear(samplesRange);
 	}
 
-	void reverse(const SamplesRange &samplesRange = {}) override {
+	void reverse(const SamplesRange &samplesRange = {}) {
 		for(size_t channel = 0; channel < getChannelsCount(); ++channel) {
 			getWriteChannelView(channel).reverse(samplesRange);
 		}
 	}
 
-	void reverseChannel(size_t channel, const SamplesRange &samplesRange = {}) override {
+	void reverseChannel(size_t channel, const SamplesRange &samplesRange = {}) {
 		assert(channel < getChannelsCount());
 		getWriteChannelView(channel).reverse(samplesRange);
 	}
 
-	AudioSampleType getHigherPeak(const SamplesRange &samplesRange = {}) const override {
+	AudioSampleType getHigherPeak(const SamplesRange &samplesRange = {}) const {
 		AudioSampleType higherPeak = 0;
 		for(size_t channel = 0; channel < getChannelsCount(); ++channel) {
 			higherPeak = std::max(getReadChannelView(channel).getHigherPeak(samplesRange), higherPeak);
@@ -276,18 +278,18 @@ public:
 		return higherPeak;
 	}
 
-	AudioSampleType getHigherPeakForChannel(size_t channel, const SamplesRange &samplesRange = {}) const override {
+	AudioSampleType getHigherPeakForChannel(size_t channel, const SamplesRange &samplesRange = {}) const {
 		assert(channel < getChannelsCount());
 		return getReadChannelView(channel).getHigherPeak(samplesRange);
 	}
 
-	AudioSampleType getRMSLevelForChannel(size_t channel, const SamplesRange &samplesRange = {}) const override {
+	AudioSampleType getRMSLevelForChannel(size_t channel, const SamplesRange &samplesRange = {}) const {
 		assert(channel < getChannelsCount());
 		return getReadChannelView(channel).getRMSLevel(samplesRange);
 	}
 
-	[[nodiscard]] size_t getBufferSize() const noexcept override { return m_singleBufferSize; }
-	[[nodiscard]] size_t getChannelsCount() const noexcept override { return !m_channelsMapping.empty() ? m_channelsMapping.size() : m_bufferChannelsCount; }
+	[[nodiscard]] size_t getBufferSize() const noexcept { return m_singleBufferSize; }
+	[[nodiscard]] size_t getChannelsCount() const noexcept { return !m_channelsMapping.empty() ? m_channelsMapping.size() : m_bufferChannelsCount; }
 
 	[[nodiscard]] const std::vector<size_t>& getChannelsMapping() const noexcept { return m_channelsMapping; }
 	void setChannelsMapping(const std::vector<size_t>& channelsMapping) { m_channelsMapping = channelsMapping; }
@@ -351,6 +353,6 @@ protected:
 
 };
 
-} // audioBuffers
+} // abl
 
-#endif //AUDIO_BUFFERS_BASICCIRCULARAUDIOBUFFERVIEW_H
+#endif //ABL_BASICCIRCULARAUDIOBUFFERVIEW_H
